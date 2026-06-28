@@ -1,0 +1,62 @@
+# Git
+.git
+.gitignore
+.github
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+*.egg-info
+dist
+build
+.eggs
+*.egg
+
+# Виртуальные окружения
+venv
+.venv
+env
+ENV
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Данные (не копируем в образ)
+data/
+history.db
+static/uploads/*
+static/results/*
+reports/*
+!static/img/placeholder.png
+
+# Кэш моделей (слишком большие для образа)
+.cache/
+*.pt
+*.pth
+
+# Логи
+*.log
+logs/
+
+# Тесты и документация
+tests/
+docs/
+*.md
+!README.md
+LICENSE
+
+# OS файлы
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Docker (избегаем рекурсии)
+Dockerfile*
+docker-compose*.yml
+.dockerignore

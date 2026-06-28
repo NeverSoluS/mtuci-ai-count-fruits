@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍎 AI-подсчёт фруктов</title>
+    <!-- станавливает тему до рендеринга страницы -->
+    <script>
+        (function() {
+            try {
+                // Читаем сохранённую тему
+                var saved = localStorage.getItem('theme');
+                
+                // Если нет сохранённой - смотрим системные настройки
+                if (!saved) {
+                    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                        saved = 'dark';
+                    } else {
+                        saved = 'light';
+                    }
+                }
+                
+                // Применяем тему мгновенно (до рендера body)
+                document.documentElement.setAttribute('data-theme', saved);
+            } catch (e) {
+                // На всякий случай ставим светлую тему, если что-то пошло не так
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
+    
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <h1>
+        <span>🍎 AI-подсчёт фруктов</span>
+        <button class="theme-toggle" onclick="toggleTheme()" title="Переключить тему">
+            <span class="theme-toggle-icon" id="themeIcon">🌙</span>
+        </button>
+    </h1>
+    <div class="tabs">
+        <button class="tab active" data-tab="file">📁 Файл</button>
+        <button class="tab" data-tab="stream">📹 Камера</button>
+        <button class="tab" data-tab="history">📊 История</button>
+    </div>
+    <!-- Файлы  -->
+    <div class="panel active" id="panel-file">
+        <h3>Загрузка фото/видео</h3>
+        <input type="file" id="fileInput" accept="image/*,video/*">
+
+        <div class="checkbox-group">
+            <label><b>Выберите задачу:</b></label>
+            <label>
+                <input type="radio" name="mode" value="detection" data-engine="yolo" checked>
+                🔍 <b>Детекция - быстрая</b> (YOLOv8m)<br>
+                <small style="color:var(--text-muted);"> Быстро, но знает только яблоко/банан/апельсин</small>
+            </label>
+            <label>
+                <input type="radio" name="mode" value="detection" data-engine="owlvit">
+                🎯 <b>Детекция - точная</b> (OWL-ViT, zero-shot)<br>
+                <small style="color:var(--text-muted);"> Знает 70+ фруктов, но медленно (3-10 сек)</small>
+            </label>
+            <label>
+                <input type="radio" name="mode" value="segmentation" data-engine="yolo">
+                🎭 <b>Сегментация</b> (YOLOv8m-seg) - выделение масок<br>
+                <small style="color:var(--text-muted);">Контуры фруктов, только яблоко/банан/апельсин</small>
+            </label>
+            <label>
+                <input type="radio" name="mode" value="classification" data-engine="yolo">
+                🏷️ <b>Классификация</b> (YOLOv8-cls) - Top-5<br>
+                <small style="color:var(--text-muted);">Определяет тип фрукта на фото</small>
+            </label>
+        </div>
+        <!-- Блок информации о выбранном режиме -->
+        <div id="engineInfo" class="info-box" style="border-left-color: var(--accent-primary);">
+            <b>⚡ Режим: YOLOv8m (быстрый)</b><br>
+            <small>Распознаёт: 🍎 Яблоко, 🍌 Банан, 🍊 Апельсин. Скорость: &lt;1 сек.</small>
+        </div>
+        <button id="runBtn">Запустить обработку</button>
+        <div id="fileResult"></div>
+    </div>
+    <!-- Камера -->
+    <div class="panel" id="panel-stream">
+        <h3>📹 Живая камера</h3>
+        <div class="tabs">
+            <button class="tab active" data-cam="webcam">📷 Веб-камера</button>
+            <button class="tab" data-cam="rtsp">🎥 RTSP</button>
+        </div>
+        <!-- Веб-камера -->
+        <div id="cam-webcam">
+            <div class="info-box">
+                <h4>🎯 Что распознаёт камера:</h4>
+                <div class="supported-fruits">
+                    <span class="fruit-tag supported">🍎 Яблоко</span>
+                    <span class="fruit-tag supported">🍌 Банан</span>
+                    <span class="fruit-tag supported">🍊 Апельсин</span>
+                </div>
+                <p class="info-text">
+                    ⚠️️️️️️️ <b>Только эти 3 фрукта</b> распознаются в реальном времени, так как модель обучена на датасете COCO.
+                </p>
+            </div>
+            <div class="checkbox-group">
+                <b>📷 Выберите камеру (через браузер):</b>
+                <div id="cameraList" style="margin: 10px 0;">
+                    <p style="color:#888;">🔍 Перейдите на вкладку для загрузки списка камер...</p>
+                </div>
+                <button id="refreshCamerasBtn" type="button">
+                <span class="refresh-icon">🔄</span>
+                <span>Обновить список камер</span>
+            </button>
+            </div>
+            <button id="camToggleBtn" class="success">▶ Запустить камеру</button>
+            <div id="webcamStatus" class="status" style="display:none;"></div>
+        </div>
+        <!-- RTSP -->
+        <div id="cam-rtsp" style="display:none;">
+            <!-- Блок информации о RTSP -->
+            <div class="info-box">
+                <h4>🎯 Что распознаёт камера:</h4>
+                <div class="supported-fruits">
+                    <span class="fruit-tag supported">🍎 Яблоко</span>
+                    <span class="fruit-tag supported">🍌 Банан</span>
+                    <span class="fruit-tag supported">🍊 Апельсин</span>
+                </div>
+                <p class="info-text">
+                    ⚠️️️️️️️ <b>Только эти 3 фрукта</b> распознаются в реальном времени,
+                    так как модель обучена на датасете COCO.
+                </p>
+            </div>
+            <label><b>RTSP URL:</b></label>
+            <input type="text" id="rtspUrl" placeholder="rtsp://admin:pass@10.10.11.12:554/stream1">
+            <button id="testRtspBtn">🔍 Проверить</button>
+            <button id="rtspToggleBtn" class="success">▶ Запустить RTSP</button>
+            <button id="resetBtn">♻ Сбросить счётчик</button>
+            <div id="rtspStatus" class="status" style="display:none;"></div>
+        </div> 
+        <!-- Видео блоки -->
+        <div class="flex-row">
+            <div class="flex-col">
+                <h4 id="localTitle">📷 Оригинал</h4>
+                <img id="localImg" src="/static/img/placeholder.png" 
+                    style="width:100%; border-radius:8px; background:#000; min-height:300px;">
+            </div>
+            <div class="flex-col">
+                <h4 id="remoteTitle">🤖 После AI</h4>
+                <img id="remoteImg" src="/static/img/placeholder.png" 
+                    style="width:100%; border-radius:8px; background:#000; min-height:300px;">
+                <video id="remoteVideo" autoplay playsinline muted
+                    style="display:none; width:100%; border-radius:8px; background:#000; min-height:300px;"></video>
+            </div>
+        </div>
+        <!-- Статистика -->
+        <div class="stats-box">
+            <div class="live-stats">
+                Уникальных: <span id="liveTotal">0</span> |
+                В кадре: <span id="liveFrame">0</span> |
+                FPS: <span id="liveFps">0</span>
+            </div>
+            <table id="liveTable">
+                <tr><th>Фрукт</th><th>Количество</th></tr>
+            </table>
+        </div>
+    </div>
+    <!-- История -->
+    <div class="panel" id="panel-history">
+        <h3>История запросов</h3>
+        <button id="loadHistoryBtn">🔄 Обновить</button>
+        <button id="pdfBtn">📄 PDF</button>
+        <button id="xlsxBtn">📊 Excel</button>
+        <button id="clearHistoryBtn" class="danger">🧺 Очистить</button>
+        <table id="historyTable">
+            <tr>
+                <th>Время</th>
+                <th>Файл</th>
+                <th>Режим</th>
+                <th>Движок</th>
+                <th>Всего</th>
+                <th>Детали</th>
+            </tr>
+        </table>
+    </div>
+    <script src="/static/js/script.js?v=20260629"></script>
+</body>
+</html>

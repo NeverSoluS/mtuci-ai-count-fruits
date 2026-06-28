@@ -1,0 +1,29 @@
+# AI-система подсчёта фруктов - зависимости (совместимо с Python 3.10-3.14)
+# Установка: pip install -r requirements.txt
+
+# Веб-сервер 
+Flask
+Werkzeug
+
+# Компьютерное зрение 
+opencv-python
+numpy
+Pillow
+
+# YOLO (детекция, сегментация, классификация) 
+ultralytics
+
+# OWL-ViT / OWLv2 (zero-shot детекция) 
+torch
+torchvision
+transformers
+accelerate
+
+# WebRTC для стриминга 
+aiortc
+av
+
+# Генерация отчётов 
+reportlab
+openpyxl
+python-dateutil
